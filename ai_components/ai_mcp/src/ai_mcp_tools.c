@@ -17,6 +17,7 @@
 
 #if defined(ENABLE_COMP_AI_VIDEO) && (ENABLE_COMP_AI_VIDEO == 1)
 #include "ai_video_input.h"
+#include "tool_style_transfer.h"
 #endif
 
 #include "ai_agent.h"
@@ -135,38 +136,26 @@ static OPERATE_RET __style_photo_capture(const MCP_PROPERTY_LIST_T *properties, 
 
     ai_video_display_stop();
 
-    PR_NOTICE("Photo captured: %d bytes", image_size);
+    PR_NOTICE("Photo captured: %d bytes, style: %s", image_size, style);
 
-    // Send image to cloud AI
-    rt = ai_agent_send_image(image_data, image_size);
-    if (rt != OPRT_OK) {
-        PR_ERR("Failed to send image to AI, rt:%d", rt);
-        ai_video_jpeg_image_free(&image_data);
-        ai_mcp_return_value_set_str(ret_val, "Failed to send image to AI");
-        return rt;
-    }
+    // Process style transfer
+    rt = tool_style_transfer_and_display(image_data, image_size, style);
 
-    // Send style conversion prompt
-    char prompt_text[512];
-    snprintf(prompt_text, sizeof(prompt_text),
-             "Convert this photo to %s style. %s Return the styled image as a downloadable URL.",
-             style, extra_prompt);
-
-    rt = ai_agent_send_text(prompt_text);
+    // Free the image data
     ai_video_jpeg_image_free(&image_data);
 
     if (rt != OPRT_OK) {
-        PR_ERR("Failed to send style prompt, rt:%d", rt);
-        ai_mcp_return_value_set_str(ret_val, "Failed to send style conversion request");
+        PR_ERR("Style transfer failed, rt:%d", rt);
+        ai_mcp_return_value_set_str(ret_val,
+            "Photo captured but style conversion failed. Please check API configuration.");
         return rt;
     }
-
-    PR_NOTICE("Style conversion request sent: %s", style);
 
     // Return success message
     char result_msg[256];
     snprintf(result_msg, sizeof(result_msg),
-             "Photo captured and sent for %s style conversion. Processing...", style);
+             "Photo captured and processing %s style conversion. The styled image will display shortly.",
+             style);
     ai_mcp_return_value_set_str(ret_val, result_msg);
 
     return OPRT_OK;
