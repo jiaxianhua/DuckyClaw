@@ -20,15 +20,15 @@ extern "C" {
 
 // https://pbt.tuya.com/s?p=dd46368ae3840e54f018b2c45dc1550b&u=c38c8fc0a5d14c4f66cae9f0cfcb2a24&t=2
 #ifndef TUYA_PRODUCT_ID
-#define TUYA_PRODUCT_ID "xxxxxxxxxxxxxxxx"
+#define TUYA_PRODUCT_ID "yamvuc62igdjkwm8"
 #endif
 
 // https://platform.tuya.com/purchase/index?type=6
 #ifndef TUYA_OPENSDK_UUID
-#define TUYA_OPENSDK_UUID    "uuidxxxxxxxxxxxxxxxx"             // Please change the correct uuid
+#define TUYA_OPENSDK_UUID    "uuid59e2fcc4267c4563"             // Please change the correct uuid
 #endif
 #ifndef TUYA_OPENSDK_AUTHKEY
-#define TUYA_OPENSDK_AUTHKEY "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" // Please change the correct authkey
+#define TUYA_OPENSDK_AUTHKEY "AtTa0krTv6xKR9BfDyapDGi2CWAMjCjb" // Please change the correct authkey
 #endif
 
 // IM configuration
@@ -39,10 +39,10 @@ extern "C" {
 #endif
 
 #ifndef IM_SECRET_FS_APP_ID
-#define IM_SECRET_FS_APP_ID         ""
+#define IM_SECRET_FS_APP_ID         "cli_a93c8b78f6b89bd9"
 #endif
 #ifndef IM_SECRET_FS_APP_SECRET
-#define IM_SECRET_FS_APP_SECRET     ""
+#define IM_SECRET_FS_APP_SECRET     "GokWFty3JJ2hWQo87mzB5cLMNoDBBZli"
 #endif
 
 #ifndef IM_SECRET_TG_TOKEN
