@@ -19,6 +19,7 @@
 #include "ai_video_input.h"
 #endif
 
+#include "ai_agent.h"
 #include "ai_mcp_server.h"
 
 #include "ai_mcp.h"
@@ -88,6 +89,85 @@ static OPERATE_RET __take_photo(const MCP_PROPERTY_LIST_T *properties, MCP_RETUR
     ai_video_jpeg_image_free(&image_data);
 
     TUYA_CALL_ERR_LOG(ai_video_display_stop());
+
+    return OPRT_OK;
+}
+
+static OPERATE_RET __style_photo_capture(const MCP_PROPERTY_LIST_T *properties, MCP_RETURN_VALUE_T *ret_val, void *user_data)
+{
+    OPERATE_RET rt = OPRT_OK;
+    uint8_t *image_data = NULL;
+    uint32_t image_size = 0;
+    const char *style = "anime";
+    const char *extra_prompt = "";
+
+    // Parse parameters
+    for (int i = 0; i < properties->count; i++) {
+        MCP_PROPERTY_T *prop = properties->properties[i];
+        if (strcmp(prop->name, "style") == 0 && prop->type == MCP_PROPERTY_TYPE_STRING) {
+            style = prop->default_val.str_val;
+        } else if (strcmp(prop->name, "prompt") == 0 && prop->type == MCP_PROPERTY_TYPE_STRING) {
+            extra_prompt = prop->default_val.str_val;
+        }
+    }
+
+    // Validate style parameter
+    if (strcmp(style, "anime") != 0 &&
+        strcmp(style, "cartoon") != 0 &&
+        strcmp(style, "watercolor") != 0 &&
+        strcmp(style, "sketch") != 0) {
+        ai_mcp_return_value_set_str(ret_val,
+            "Invalid style. Use: anime, cartoon, watercolor, or sketch");
+        return OPRT_INVALID_PARM;
+    }
+
+    // Start camera and capture photo
+    TUYA_CALL_ERR_LOG(ai_video_display_start());
+    tal_system_sleep(1000);  // Camera stabilization
+
+    rt = ai_video_get_jpeg_frame(&image_data, &image_size);
+    if (rt != OPRT_OK) {
+        PR_ERR("Failed to capture photo, rt:%d", rt);
+        ai_video_display_stop();
+        ai_mcp_return_value_set_str(ret_val, "Photo capture failed");
+        return rt;
+    }
+
+    ai_video_display_stop();
+
+    PR_NOTICE("Photo captured: %d bytes", image_size);
+
+    // Send image to cloud AI
+    rt = ai_agent_send_image(image_data, image_size);
+    if (rt != OPRT_OK) {
+        PR_ERR("Failed to send image to AI, rt:%d", rt);
+        ai_video_jpeg_image_free(&image_data);
+        ai_mcp_return_value_set_str(ret_val, "Failed to send image to AI");
+        return rt;
+    }
+
+    // Send style conversion prompt
+    char prompt_text[512];
+    snprintf(prompt_text, sizeof(prompt_text),
+             "Convert this photo to %s style. %s Return the styled image as a downloadable URL.",
+             style, extra_prompt);
+
+    rt = ai_agent_send_text(prompt_text);
+    ai_video_jpeg_image_free(&image_data);
+
+    if (rt != OPRT_OK) {
+        PR_ERR("Failed to send style prompt, rt:%d", rt);
+        ai_mcp_return_value_set_str(ret_val, "Failed to send style conversion request");
+        return rt;
+    }
+
+    PR_NOTICE("Style conversion request sent: %s", style);
+
+    // Return success message
+    char result_msg[256];
+    snprintf(result_msg, sizeof(result_msg),
+             "Photo captured and sent for %s style conversion. Processing...", style);
+    ai_mcp_return_value_set_str(ret_val, result_msg);
 
     return OPRT_OK;
 }
@@ -172,6 +252,21 @@ static OPERATE_RET __ai_mcp_tools_register(void)
         NULL,
         MCP_PROP_STR("question", "The question prompting the photo capture."),
         MCP_PROP_INT_DEF_RANGE("count", "Number of photos to capture (1-10).", 1, 1, 10)
+    ), err);
+
+    // device camera style photo tool
+    TUYA_CALL_ERR_GOTO(AI_MCP_TOOL_ADD(
+        "device_camera_style_photo",
+        "Captures a photo and converts it to artistic style (anime, cartoon, watercolor, sketch) using AI. "
+        "The styled image will be automatically displayed on the screen.\n"
+        "Parameters:\n"
+        "- style (string): Style type - anime, cartoon, watercolor, or sketch.\n"
+        "- prompt (string, optional): Additional style instructions.\n"
+        "Returns: Status message indicating the photo was captured and sent for processing.",
+        __style_photo_capture,
+        NULL,
+        MCP_PROP_STR("style", "Style type: anime, cartoon, watercolor, or sketch"),
+        MCP_PROP_STR_DEF("prompt", "Additional style instructions (optional)", "")
     ), err);
 #endif
 
