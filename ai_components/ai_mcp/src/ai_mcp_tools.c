@@ -258,11 +258,13 @@ static OPERATE_RET __ai_mcp_tools_register(void)
     TUYA_CALL_ERR_GOTO(AI_MCP_TOOL_ADD(
         "device_camera_style_photo",
         "Captures a photo and converts it to artistic style (anime, cartoon, watercolor, sketch) using AI. "
-        "The styled image will be automatically displayed on the screen.\n"
+        "Use ONLY when the user explicitly requests a styled photo (e.g., 'take an anime photo', 'cartoon style photo'). "
+        "Call this tool ONCE per request - do NOT call it repeatedly. "
+        "After calling, wait for the styled image to be returned and displayed automatically.\n"
         "Parameters:\n"
         "- style (string): Style type - anime, cartoon, watercolor, or sketch.\n"
         "- prompt (string, optional): Additional style instructions.\n"
-        "Returns: Status message indicating the photo was captured and sent for processing.",
+        "Returns: Status message. The styled image will arrive asynchronously and display automatically.",
         __style_photo_capture,
         NULL,
         MCP_PROP_STR("style", "Style type: anime, cartoon, watercolor, or sketch"),
