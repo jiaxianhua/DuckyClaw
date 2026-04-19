@@ -19,6 +19,11 @@
 #include "ai_video_input.h"
 #endif
 
+#if defined(ENABLE_COMP_AI_PICTURE) && (ENABLE_COMP_AI_PICTURE == 1)
+#include "ai_picture_output.h"
+#endif
+
+#include "ai_agent.h"
 #include "ai_mcp_server.h"
 
 #include "ai_mcp.h"
@@ -91,6 +96,39 @@ static OPERATE_RET __take_photo(const MCP_PROPERTY_LIST_T *properties, MCP_RETUR
 
     return OPRT_OK;
 }
+
+#if defined(ENABLE_COMP_AI_PICTURE) && (ENABLE_COMP_AI_PICTURE == 1)
+static OPERATE_RET __generate_girl_avatar(const MCP_PROPERTY_LIST_T *properties, MCP_RETURN_VALUE_T *ret_val, void *user_data)
+{
+    OPERATE_RET rt = OPRT_OK;
+    const char *avatar_url = "https://api.xyttkx.cn/avatar.php";
+
+    PR_NOTICE("Generating random girl avatar");
+
+    // Check if picture output is initialized
+    if (!ai_picture_is_init()) {
+        PR_ERR("Picture output not initialized");
+        ai_mcp_return_value_set_str(ret_val, "Picture display system not ready");
+        return OPRT_COM_ERROR;
+    }
+
+    // Start downloading and displaying the avatar
+    rt = ai_picture_output_start(avatar_url);
+    if (rt != OPRT_OK) {
+        PR_ERR("Failed to start picture output: %d", rt);
+        ai_mcp_return_value_set_str(ret_val, "Failed to download avatar image");
+        return rt;
+    }
+
+    PR_NOTICE("Started downloading girl avatar from: %s", avatar_url);
+
+    // Return success message
+    ai_mcp_return_value_set_str(ret_val,
+        "Generating random girl avatar. The image will display on screen shortly.");
+
+    return OPRT_OK;
+}
+#endif
 #endif
 
 #if defined(ENABLE_COMP_AI_AUDIO) && (ENABLE_COMP_AI_AUDIO == 1)
@@ -172,6 +210,20 @@ static OPERATE_RET __ai_mcp_tools_register(void)
         NULL,
         MCP_PROP_STR("question", "The question prompting the photo capture."),
         MCP_PROP_INT_DEF_RANGE("count", "Number of photos to capture (1-10).", 1, 1, 10)
+    ), err);
+#endif
+
+#if defined(ENABLE_COMP_AI_PICTURE) && (ENABLE_COMP_AI_PICTURE == 1)
+    // generate girl avatar tool
+    TUYA_CALL_ERR_GOTO(AI_MCP_TOOL_ADD(
+        "device_generate_girl_avatar",
+        "Generates and displays a random girl avatar image on the screen. "
+        "Use when the user asks for a girl avatar, female avatar, or random girl picture. "
+        "The avatar is randomly selected from a curated collection of 2000+ images.\n"
+        "Parameters: None\n"
+        "Returns: Status message. The avatar image will be downloaded and displayed automatically.",
+        __generate_girl_avatar,
+        NULL
     ), err);
 #endif
 
