@@ -17,7 +17,6 @@
 
 #if defined(ENABLE_COMP_AI_VIDEO) && (ENABLE_COMP_AI_VIDEO == 1)
 #include "ai_video_input.h"
-#include "tool_style_transfer.h"
 #endif
 
 #if defined(ENABLE_COMP_AI_PICTURE) && (ENABLE_COMP_AI_PICTURE == 1)
@@ -94,73 +93,6 @@ static OPERATE_RET __take_photo(const MCP_PROPERTY_LIST_T *properties, MCP_RETUR
     ai_video_jpeg_image_free(&image_data);
 
     TUYA_CALL_ERR_LOG(ai_video_display_stop());
-
-    return OPRT_OK;
-}
-
-static OPERATE_RET __style_photo_capture(const MCP_PROPERTY_LIST_T *properties, MCP_RETURN_VALUE_T *ret_val, void *user_data)
-{
-    OPERATE_RET rt = OPRT_OK;
-    uint8_t *image_data = NULL;
-    uint32_t image_size = 0;
-    const char *style = "anime";
-    const char *extra_prompt = "";
-
-    // Parse parameters
-    for (int i = 0; i < properties->count; i++) {
-        MCP_PROPERTY_T *prop = properties->properties[i];
-        if (strcmp(prop->name, "style") == 0 && prop->type == MCP_PROPERTY_TYPE_STRING) {
-            style = prop->default_val.str_val;
-        } else if (strcmp(prop->name, "prompt") == 0 && prop->type == MCP_PROPERTY_TYPE_STRING) {
-            extra_prompt = prop->default_val.str_val;
-        }
-    }
-
-    // Validate style parameter
-    if (strcmp(style, "anime") != 0 &&
-        strcmp(style, "cartoon") != 0 &&
-        strcmp(style, "watercolor") != 0 &&
-        strcmp(style, "sketch") != 0) {
-        ai_mcp_return_value_set_str(ret_val,
-            "Invalid style. Use: anime, cartoon, watercolor, or sketch");
-        return OPRT_INVALID_PARM;
-    }
-
-    // Start camera and capture photo
-    TUYA_CALL_ERR_LOG(ai_video_display_start());
-    tal_system_sleep(1000);  // Camera stabilization
-
-    rt = ai_video_get_jpeg_frame(&image_data, &image_size);
-    if (rt != OPRT_OK) {
-        PR_ERR("Failed to capture photo, rt:%d", rt);
-        ai_video_display_stop();
-        ai_mcp_return_value_set_str(ret_val, "Photo capture failed");
-        return rt;
-    }
-
-    ai_video_display_stop();
-
-    PR_NOTICE("Photo captured: %d bytes, style: %s", image_size, style);
-
-    // Process style transfer
-    rt = tool_style_transfer_and_display(image_data, image_size, style);
-
-    // Free the image data
-    ai_video_jpeg_image_free(&image_data);
-
-    if (rt != OPRT_OK) {
-        PR_ERR("Style transfer failed, rt:%d", rt);
-        ai_mcp_return_value_set_str(ret_val,
-            "Photo captured but style conversion failed. Please check API configuration.");
-        return rt;
-    }
-
-    // Return success message
-    char result_msg[256];
-    snprintf(result_msg, sizeof(result_msg),
-             "Photo captured and processing %s style conversion. The styled image will display shortly.",
-             style);
-    ai_mcp_return_value_set_str(ret_val, result_msg);
 
     return OPRT_OK;
 }
@@ -279,23 +211,6 @@ static OPERATE_RET __ai_mcp_tools_register(void)
         MCP_PROP_STR("question", "The question prompting the photo capture."),
         MCP_PROP_INT_DEF_RANGE("count", "Number of photos to capture (1-10).", 1, 1, 10)
     ), err);
-
-    // device camera style photo tool
-    TUYA_CALL_ERR_GOTO(AI_MCP_TOOL_ADD(
-        "device_camera_style_photo",
-        "Captures a photo and converts it to artistic style (anime, cartoon, watercolor, sketch) using AI. "
-        "Use ONLY when the user explicitly requests a styled photo (e.g., 'take an anime photo', 'cartoon style photo'). "
-        "Call this tool ONCE per request - do NOT call it repeatedly. "
-        "After calling, wait for the styled image to be returned and displayed automatically.\n"
-        "Parameters:\n"
-        "- style (string): Style type - anime, cartoon, watercolor, or sketch.\n"
-        "- prompt (string, optional): Additional style instructions.\n"
-        "Returns: Status message. The styled image will arrive asynchronously and display automatically.",
-        __style_photo_capture,
-        NULL,
-        MCP_PROP_STR("style", "Style type: anime, cartoon, watercolor, or sketch"),
-        MCP_PROP_STR_DEF("prompt", "Additional style instructions (optional)", "")
-    ), err);
 #endif
 
 #if defined(ENABLE_COMP_AI_PICTURE) && (ENABLE_COMP_AI_PICTURE == 1)
@@ -310,7 +225,6 @@ static OPERATE_RET __ai_mcp_tools_register(void)
         __generate_girl_avatar,
         NULL
     ), err);
-#endif
 #endif
 
 #if defined(ENABLE_COMP_AI_AUDIO) && (ENABLE_COMP_AI_AUDIO == 1)
