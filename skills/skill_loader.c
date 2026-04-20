@@ -133,6 +133,65 @@
     "-> cron_list, find job watch-for-visitor, cron_remove(job_id)\n"        \
     "-> Reply: Watching has stopped.\n"
 
+#define BUILTIN_CAR_CONTROL                                                  \
+    "# Car Control\n"                                                        \
+    "\n"                                                                     \
+    "Control an ESP32-based car via HTTP commands. The car supports "        \
+    "movement commands and can execute sequences of actions.\n"              \
+    "\n"                                                                     \
+    "## When to use\n"                                                       \
+    "When the user asks to control the car, such as:\n"                      \
+    "- \"小车前进1000ms\" / \"car move forward 1000ms\"\n"                    \
+    "- \"小车后退500\" / \"car backward 500\"\n"                              \
+    "- \"小车左转90度\" / \"car turn left 90\"\n"                             \
+    "- \"小车右转90度\" / \"car turn right 90\"\n"                            \
+    "- \"小车IP为192.168.3.100\" / \"set car IP to 192.168.3.100\"\n"        \
+    "- Complex sequences like \"小车先前进100，然后左转90，再前进50\"\n"      \
+    "\n"                                                                     \
+    "## Available tools\n"                                                   \
+    "1. **car_set_ip** - Set the car's IP address (default: 192.168.3.111)\n" \
+    "2. **car_command** - Send a single command\n"                           \
+    "3. **car_sequence** - Send a sequence of commands\n"                    \
+    "\n"                                                                     \
+    "## Supported actions\n"                                                 \
+    "- `forward` (前进) - Move forward\n"                                    \
+    "- `backward` (后退) - Move backward\n"                                  \
+    "- `left` (左平移) - Move left\n"                                        \
+    "- `right` (右平移) - Move right\n"                                      \
+    "- `rotate_left` (右转) - Turn RIGHT (hardware reversed)\n"              \
+    "- `rotate_right` (左转) - Turn LEFT (hardware reversed)\n"              \
+    "- `stop` (停止) - Stop\n"                                               \
+    "\n"                                                                     \
+    "## IMPORTANT: Rotation mapping\n"                                       \
+    "The hardware rotation is reversed:\n"                                   \
+    "- When user says \"左转\" (turn left) -> use rotate_right\n"            \
+    "- When user says \"右转\" (turn right) -> use rotate_left\n"            \
+    "\n"                                                                     \
+    "## How to use\n"                                                        \
+    "1. **Set IP** (if needed): Use car_set_ip(ip_address=\"192.168.3.xxx\")\n" \
+    "2. **Single command**: Use car_command(action=\"forward\", value=\"1000\")\n" \
+    "3. **Sequence**: Use car_sequence with JSON array:\n"                   \
+    "   [{\"action\":\"forward\",\"value\":100},"                             \
+    "{\"action\":\"rotate_right\",\"value\":90}]\n"                          \
+    "\n"                                                                     \
+    "## Examples\n"                                                          \
+    "User: \"小车前进1000ms\"\n"                                              \
+    "-> car_command(action=\"forward\", value=\"1000\")\n"                   \
+    "\n"                                                                     \
+    "User: \"小车左转90度\"\n"                                                \
+    "-> car_command(action=\"rotate_right\", value=\"90\")\n"                \
+    "\n"                                                                     \
+    "User: \"小车右转90度\"\n"                                                \
+    "-> car_command(action=\"rotate_left\", value=\"90\")\n"                 \
+    "\n"                                                                     \
+    "User: \"小车先前进100，左转90，再前进50\"\n"                             \
+    "-> car_sequence(sequence=\"[{\\\"action\\\":\\\"forward\\\","           \
+    "\\\"value\\\":100},{\\\"action\\\":\\\"rotate_right\\\","               \
+    "\\\"value\\\":90},{\\\"action\\\":\\\"forward\\\",\\\"value\\\":50}]\")\n" \
+    "\n"                                                                     \
+    "User: \"小车IP为192.168.3.100\"\n"                                       \
+    "-> car_set_ip(ip_address=\"192.168.3.100\")\n"
+
 /* ------------------------------------------------------------------ */
 
 typedef struct {
@@ -144,6 +203,7 @@ static const builtin_skill_t s_builtins[] = {
     {"weather",           BUILTIN_WEATHER           },
     {"daily-briefing",    BUILTIN_DAILY_BRIEFING    },
     {"skill-creator",     BUILTIN_SKILL_CREATOR     },
+    {"car-control",       BUILTIN_CAR_CONTROL       },
     // {"watch-for-visitor", BUILTIN_WATCH_FOR_VISITOR },
 };
 

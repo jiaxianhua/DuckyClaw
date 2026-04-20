@@ -12,6 +12,7 @@
 #include "tool_files.h"
 #include "tool_cron.h"
 #include "tool_openclaw_ctrl.h"
+#include "tool_car_control.h"
 #include "cron_service.h"
 #include "heartbeat.h"
 #include "memory_manager.h"
@@ -73,6 +74,9 @@ static OPERATE_RET __ai_mcp_init(void *data)
 
     /* Register OpenClaw/PC control tool */
     TUYA_CALL_ERR_LOG(tool_openclaw_ctrl_register());
+
+    /* Register car control tools */
+    TUYA_CALL_ERR_LOG(tool_car_control_register());
 
     /* Register hardware peripheral tools */
     #if defined(ENABLE_HARDWARE_MCP) && (ENABLE_HARDWARE_MCP == 1)
